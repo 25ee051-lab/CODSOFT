@@ -1,0 +1,51 @@
+# Import libraries
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import classification_report
+import joblib
+
+# STEP 1: Load your dataset
+# The CSV must have columns: 'plot' and 'genre'
+data = pd.read_csv("movies.csv")
+data = data.dropna(subset=["plot", "genre"])  # Remove rows with missing values
+
+# STEP 2: Encode genre labels into numbers
+label_encoder = LabelEncoder()
+data["genre_code"] = label_encoder.fit_transform(data["genre"])
+
+# STEP 3: Split into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(
+    data["plot"], data["genre_code"], test_size=0.2, random_state=42
+)
+
+# STEP 4: Build pipeline (TF-IDF + Logistic Regression)
+model = Pipeline([
+    ("tfidf", TfidfVectorizer(stop_words="english", ngram_range=(1, 2))),
+    ("classifier", LogisticRegression(max_iter=1000))
+])
+
+# STEP 5: Train the model
+print("Training the model...")
+model.fit(X_train, y_train)
+
+# STEP 6: Evaluate performance
+y_pred = model.predict(X_test)
+print("Evaluation results:")
+print(classification_report(y_test, y_pred, target_names=label_encoder.classes_))
+
+# STEP 7: Save the model and encoder
+joblib.dump(model, "genre_model.joblib")
+joblib.dump(label_encoder, "genre_labels.joblib")
+
+# STEP 8: Function to predict genre for new plots
+def predict_genre(plot_text):
+    genre_code = model.predict([plot_text])[0]
+    return label_encoder.inverse_transform([genre_code])[0]
+
+# Example usage
+new_plot = "A young wizard discovers his magical heritage and battles dark forces at a magical school."
+print("Predicted genre:", predict_genre(new_plot))
