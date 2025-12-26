@@ -1,0 +1,74 @@
+# -------------------------------
+# SPAM SMS DETECTION (Student Touch Version)
+# -------------------------------
+
+# Step 1: Import the libraries
+# pandas → handle data
+# sklearn → machine learning tools
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+
+# Models we’ll test
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import LinearSVC
+
+# Step 2: Load the dataset
+# The classic dataset is spam.csv (with 'ham' and 'spam' labels)
+data = pd.read_csv("spam.csv", encoding="latin-1")
+
+# Keep only the useful columns: label and message
+data = data[['v1', 'v2']]
+data.columns = ['label', 'message']
+
+print("First few rows of the dataset:")
+print(data.head())
+
+# Step 3: Convert labels into numbers
+# spam → 1, ham → 0
+data['label'] = data['label'].map({'spam': 1, 'ham': 0})
+
+# Step 4: Split into training and testing sets
+# Training → teach the model
+# Testing → check how well it learned
+X_train, X_test, y_train, y_test = train_test_split(
+    data['message'], data['label'], test_size=0.3, random_state=42
+)
+
+# Step 5: Convert text into numbers using TF-IDF
+# TF-IDF gives weight to important words and reduces weight for common words
+vectorizer = TfidfVectorizer(stop_words='english')
+X_train_tfidf = vectorizer.fit_transform(X_train)
+X_test_tfidf = vectorizer.transform(X_test)
+
+# ---------------- Naive Bayes ----------------
+print("\nNaive Bayes Results:")
+nb = MultinomialNB()
+nb.fit(X_train_tfidf, y_train)
+y_pred_nb = nb.predict(X_test_tfidf)
+
+print("Accuracy:", accuracy_score(y_test, y_pred_nb))
+print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred_nb))
+print("Report:\n", classification_report(y_test, y_pred_nb))
+
+# ---------------- Logistic Regression ----------------
+print("\nLogistic Regression Results:")
+lr = LogisticRegression(max_iter=1000)
+lr.fit(X_train_tfidf, y_train)
+y_pred_lr = lr.predict(X_test_tfidf)
+
+print("Accuracy:", accuracy_score(y_test, y_pred_lr))
+print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred_lr))
+print("Report:\n", classification_report(y_test, y_pred_lr))
+
+# ---------------- Support Vector Machine ----------------
+print("\nSupport Vector Machine Results:")
+svm = LinearSVC()
+svm.fit(X_train_tfidf, y_train)
+y_pred_svm = svm.predict(X_test_tfidf)
+
+print("Accuracy:", accuracy_score(y_test, y_pred_svm))
+print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred_svm))
+print("Report:\n", classification_report(y_test, y_pred_svm))
